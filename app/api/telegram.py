@@ -69,11 +69,17 @@ async def telegram_webhook(
 
     if state and state.state == "waiting_employee_code":
 
+        print("CHAT ID:", chat_id)
+        print("TEXT:", text)
+        print("STATE:", state.state)
+
         employee = (
             db.query(Employee)
             .filter(Employee.employee_code == text)
             .first()
         )
+
+        print("EMPLOYEE:", employee)
 
         if not employee:
 
