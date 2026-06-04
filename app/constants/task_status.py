@@ -1,0 +1,11 @@
+TASK_NOT_STARTED = "not_started"
+TASK_IN_PROGRESS = "in_progress"
+TASK_COMPLETED = "completed"
+TASK_NEED_HELP = "need_help"
+
+VALID_STATUSES = [
+    TASK_NOT_STARTED,
+    TASK_IN_PROGRESS,
+    TASK_COMPLETED,
+    TASK_NEED_HELP
+]
