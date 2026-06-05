@@ -8,9 +8,8 @@ from app.database.database import get_db
 from app.models.task import Task
 from app.models.employee import Employee
 
-from app.services.reminder_service import (
-    send_task_reminder
-)
+from app.services.telegram_service import send_message
+
 
 router = APIRouter(
     prefix="/reminders",
@@ -31,7 +30,7 @@ def run_reminders(
         .all()
     )
 
-    count = 0
+    reminders_sent = 0
 
     for task in tasks:
 
@@ -43,15 +42,35 @@ def run_reminders(
             .first()
         )
 
-        if employee and employee.telegram_chat_id:
+        if not employee:
+            continue
 
-            send_task_reminder(
-                task,
-                employee
-            )
+        if not employee.telegram_chat_id:
+            continue
 
-            count += 1
+        message = f"""
+⏰ TASK REMINDER
+
+📝 Task:
+{task.title}
+
+📄 Description:
+{task.description}
+
+📊 Status:
+{task.status}
+
+Please update your task status.
+"""
+
+        send_message(
+            employee.telegram_chat_id,
+            message
+        )
+
+        reminders_sent += 1
 
     return {
-        "reminders_sent": count
+        "success": True,
+        "reminders_sent": reminders_sent
     }
