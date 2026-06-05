@@ -113,12 +113,35 @@ Not Started
     return task
 
 
-@router.get(
-    "/",
-    response_model=list[TaskResponse]
-)
+@router.get("/")
 def get_tasks(
     db: Session = Depends(get_db)
 ):
 
-    return db.query(Task).all()
+    tasks = db.query(Task).all()
+
+    result = []
+
+    for task in tasks:
+
+        employee = (
+            db.query(Employee)
+            .filter(
+                Employee.id == task.assigned_to
+            )
+            .first()
+        )
+
+        result.append({
+            "id": str(task.id),
+            "title": task.title,
+            "description": task.description,
+            "status": task.status,
+            "employee_name":
+                employee.name
+                if employee
+                else "Unknown",
+            "due_time": task.due_time
+        })
+
+    return result
