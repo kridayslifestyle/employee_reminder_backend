@@ -6,7 +6,7 @@ from app.api.task import router as task_router
 from app.api.task_update import router as task_update_router
 from app.api.telegram import router as telegram_router
 from app.api.dashboard import router as dashboard_router
-from app.api.dashboard import router as reminder_router
+from app.api.reminder import router as reminder_router
 
 
 app = FastAPI(
