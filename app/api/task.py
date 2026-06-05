@@ -11,7 +11,8 @@ from app.models.employee import Employee
 
 from app.schemas.task import (
     TaskCreate,
-    TaskResponse
+    TaskResponse,
+    TaskUpdate
 )
 
 from app.dependencies.auth import (
@@ -145,3 +146,4 @@ def get_tasks(
         })
 
     return result
+
