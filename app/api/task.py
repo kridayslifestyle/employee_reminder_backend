@@ -1,127 +1,124 @@
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
 
+from app.models.task import Task
 from app.models.employee import Employee
-from app.models.telegram_state import TelegramState
+
+from app.schemas.task import (
+    TaskCreate,
+    TaskResponse
+)
+
+from app.dependencies.auth import (
+    get_current_user
+)
 
 from app.services.telegram_service import send_message
 
 
 router = APIRouter(
-    prefix="/telegram",
-    tags=["Telegram"]
+    prefix="/tasks",
+    tags=["Tasks"]
 )
 
 
-@router.post("/webhook")
-async def telegram_webhook(
-    payload: dict,
+@router.post(
+    "/",
+    response_model=TaskResponse
+)
+def create_task(
+    payload: TaskCreate,
+    current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    # TELEGRAM BUTTON CLICKS
-    callback_query = payload.get("callback_query")
-
-    if callback_query:
-
-        data = callback_query["data"]
-
-        chat_id = str(
-            callback_query["message"]["chat"]["id"]
-        )
-
-        print("CALLBACK:", data)
-
-        send_message(
-            chat_id,
-            f"You clicked: {data}"
-        )
-
-        return {"ok": True}
-
-    # TELEGRAM MESSAGES
-    message = payload.get("message")
-
-    if not message:
-        return {"ok": True}
-
-    chat_id = str(message["chat"]["id"])
-    text = message.get("text", "").strip()
-
-    # START COMMAND
-    if text == "/start":
-
-        state = (
-            db.query(TelegramState)
-            .filter(
-                TelegramState.chat_id == chat_id
-            )
-            .first()
-        )
-
-        if state:
-            state.state = "waiting_employee_code"
-
-        else:
-            state = TelegramState(
-                chat_id=chat_id,
-                state="waiting_employee_code"
-            )
-
-            db.add(state)
-
-        db.commit()
-
-        send_message(
-            chat_id,
-            "Welcome to Hytoma Employee Reminder System\n\nPlease enter your Employee Code.\nExample: EMP001"
-        )
-
-        return {"ok": True}
-
-    # EMPLOYEE CODE LINKING
-    state = (
-        db.query(TelegramState)
+    employee = (
+        db.query(Employee)
         .filter(
-            TelegramState.chat_id == chat_id
+            Employee.id == payload.assigned_to
         )
         .first()
     )
 
-    if state and state.state == "waiting_employee_code":
-
-        employee = (
-            db.query(Employee)
-            .filter(
-                Employee.employee_code == text
-            )
-            .first()
+    if not employee:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
         )
 
-        if not employee:
+    task = Task(
+        title=payload.title,
+        description=payload.description,
+        assigned_to=payload.assigned_to,
+        assigned_by=current_user["sub"],
+        due_time=payload.due_time
+    )
 
-            send_message(
-                chat_id,
-                "❌ Invalid Employee Code.\nPlease try again."
-            )
+    db.add(task)
+    db.commit()
+    db.refresh(task)
 
-            return {"ok": True}
+    if employee.telegram_chat_id:
 
-        employee.telegram_chat_id = chat_id
+        message = f"""
+📌 NEW TASK ASSIGNED
 
-        state.state = "linked"
+📝 Title:
+{task.title}
 
-        db.commit()
+📄 Description:
+{task.description}
+
+⏰ Due:
+{task.due_time}
+
+❌ Status:
+Not Started
+"""
+
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "🟡 In Progress",
+                        "callback_data": f"in_progress:{task.id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "✅ Completed",
+                        "callback_data": f"completed:{task.id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "🆘 Need Help",
+                        "callback_data": f"need_help:{task.id}"
+                    }
+                ]
+            ]
+        }
 
         send_message(
-            chat_id,
-            f"✅ Welcome {employee.name}\n\nYour account has been linked successfully."
+            employee.telegram_chat_id,
+            message,
+            keyboard
         )
 
-        return {"ok": True}
+    return task
 
-    return {"ok": True}
+
+@router.get(
+    "/",
+    response_model=list[TaskResponse]
+)
+def get_tasks(
+    db: Session = Depends(get_db)
+):
+
+    return db.query(Task).all()
