@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -66,7 +67,7 @@ def run_reminders(
         if existing_reminder:
 
             thirty_minutes_ago = (
-                datetime.utcnow() - timedelta(minutes=30)
+                datetime.now(timezone.utc) - timedelta(minutes=30)
             )
 
             if existing_reminder.last_sent_at > thirty_minutes_ago:
@@ -95,7 +96,7 @@ Please update your task status.
         if existing_reminder:
 
             existing_reminder.reminder_count += 1
-            existing_reminder.last_sent_at = datetime.utcnow()
+            existing_reminder.last_sent_at = datetime.now(timezone.utc)
 
         else:
 
