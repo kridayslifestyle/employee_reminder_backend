@@ -63,3 +63,38 @@ def get_dashboard_stats(
         "pending_tasks": pending_tasks,
         "need_help_tasks": need_help_tasks
     }
+
+@router.get("/recent-tasks")
+def get_recent_tasks(
+    db: Session = Depends(get_db)
+):
+
+    tasks = (
+        db.query(Task)
+        .order_by(Task.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    data = []
+
+    for task in tasks:
+
+        employee = (
+            db.query(Employee)
+            .filter(
+                Employee.id == task.assigned_to
+            )
+            .first()
+        )
+
+        data.append({
+            "id": str(task.id),
+            "title": task.title,
+            "employee_name": employee.name if employee else None,
+            "status": task.status,
+            "due_time": task.due_time,
+            "created_at": task.created_at
+        })
+
+    return data
