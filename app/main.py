@@ -6,6 +6,8 @@ from app.api.task import router as task_router
 from app.api.task_update import router as task_update_router
 from app.api.telegram import router as telegram_router
 from app.api.dashboard import router as dashboard_router
+from app.api.dashboard import router as reminder_router
+
 
 app = FastAPI(
     title="Employee Reminder System"
@@ -17,6 +19,8 @@ app.include_router(task_router)
 app.include_router(task_update_router)
 app.include_router(telegram_router)
 app.include_router(dashboard_router)
+app.include_router(reminder_router)
+
 
 @app.get("/")
 def health():
