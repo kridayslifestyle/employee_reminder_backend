@@ -147,7 +147,6 @@ def activate_employee(
     employee_id: str,
     db: Session = Depends(get_db)
 ):
-
     employee = (
         db.query(Employee)
         .filter(Employee.id == employee_id)
