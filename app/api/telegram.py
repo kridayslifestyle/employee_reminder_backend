@@ -11,6 +11,7 @@ from app.models.task import Task
 from app.models.task_update import TaskUpdate
 
 from app.services.telegram_service import send_message
+from app.models.notification import Notification
 
 
 router = APIRouter(
@@ -63,6 +64,13 @@ async def telegram_webhook(
 
         if status == "need_help":
             note = "Employee requested assistance"
+
+            notification = Notification(
+                title="Employee Needs Help",
+                message=f"{employee.name} requested help for task: {task.title}"
+            )
+
+            db.add(notification)
 
         update = TaskUpdate(
             task_id=task.id,
