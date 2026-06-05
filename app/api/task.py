@@ -147,3 +147,59 @@ def get_tasks(
 
     return result
 
+@router.put("/{task_id}")
+def update_task(
+    task_id: str,
+    payload: TaskUpdate,
+    db: Session = Depends(get_db)
+):
+
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    update_data = payload.model_dump(
+        exclude_unset=True
+    )
+
+    for key, value in update_data.items():
+        setattr(task, key, value)
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+@router.delete("/{task_id}")
+def delete_task(
+    task_id: str,
+    db: Session = Depends(get_db)
+):
+
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    db.delete(task)
+
+    db.commit()
+
+    return {
+        "message": "Task deleted"
+    }
