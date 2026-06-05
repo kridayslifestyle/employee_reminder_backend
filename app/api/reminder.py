@@ -67,7 +67,7 @@ def run_reminders(
         if existing_reminder:
 
             thirty_minutes_ago = (
-                datetime.now(timezone.utc) - timedelta(minutes=30)
+                datetime.now(timezone.utc) - timedelta(minutes=15)
             )
 
             if existing_reminder.last_sent_at > thirty_minutes_ago:
