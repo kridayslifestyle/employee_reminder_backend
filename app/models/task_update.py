@@ -24,7 +24,10 @@ class TaskUpdate(Base):
 
     task_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("tasks.id")
+        ForeignKey(
+            "tasks.id",
+            ondelete="CASCADE"
+        )
     )
 
     employee_id = Column(

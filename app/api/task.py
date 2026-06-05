@@ -9,6 +9,7 @@ from app.database.database import get_db
 from app.models.task import Task
 from app.models.task_update import TaskUpdate as TaskUpdateModel
 from app.models.employee import Employee
+from app.models.reminder import Reminder
 
 from app.schemas.task import (
     TaskCreate,
@@ -199,6 +200,12 @@ def delete_task(
 
     db.query(TaskUpdateModel).filter(
         TaskUpdateModel.task_id == task_id
+    ).delete(
+        synchronize_session=False
+    )
+
+    db.query(Reminder).filter(
+        Reminder.task_id == task_id
     ).delete(
         synchronize_session=False
     )
