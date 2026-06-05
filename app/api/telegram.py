@@ -7,6 +7,8 @@ from app.database.database import get_db
 
 from app.models.employee import Employee
 from app.models.telegram_state import TelegramState
+from app.models.task import Task
+from app.models.task_update import TaskUpdate
 
 from app.services.telegram_service import send_message
 
@@ -23,6 +25,63 @@ async def telegram_webhook(
     db: Session = Depends(get_db)
 ):
 
+    # HANDLE BUTTON CLICKS
+    callback_query = payload.get("callback_query")
+
+    if callback_query:
+
+        data = callback_query["data"]
+
+        chat_id = str(
+            callback_query["message"]["chat"]["id"]
+        )
+
+        status, task_id = data.split(":")
+
+        employee = (
+            db.query(Employee)
+            .filter(
+                Employee.telegram_chat_id == chat_id
+            )
+            .first()
+        )
+
+        task = (
+            db.query(Task)
+            .filter(
+                Task.id == task_id
+            )
+            .first()
+        )
+
+        if not employee or not task:
+            return {"ok": True}
+
+        task.status = status
+
+        note = "Updated from Telegram"
+
+        if status == "need_help":
+            note = "Employee requested assistance"
+
+        update = TaskUpdate(
+            task_id=task.id,
+            employee_id=employee.id,
+            status=status,
+            note=note
+        )
+
+        db.add(update)
+        db.commit()
+
+        send_message(
+            chat_id,
+            f"✅ Task status updated to: {status}"
+        )
+
+        return {"ok": True}
+
+    # HANDLE NORMAL MESSAGES
     message = payload.get("message")
 
     if not message:
@@ -31,12 +90,13 @@ async def telegram_webhook(
     chat_id = str(message["chat"]["id"])
     text = message.get("text", "").strip()
 
-    # Handle /start
     if text == "/start":
 
         state = (
             db.query(TelegramState)
-            .filter(TelegramState.chat_id == chat_id)
+            .filter(
+                TelegramState.chat_id == chat_id
+            )
             .first()
         )
 
@@ -60,26 +120,23 @@ async def telegram_webhook(
 
         return {"ok": True}
 
-    # Handle employee code
     state = (
         db.query(TelegramState)
-        .filter(TelegramState.chat_id == chat_id)
+        .filter(
+            TelegramState.chat_id == chat_id
+        )
         .first()
     )
 
     if state and state.state == "waiting_employee_code":
 
-        print("CHAT ID:", chat_id)
-        print("TEXT:", text)
-        print("STATE:", state.state)
-
         employee = (
             db.query(Employee)
-            .filter(Employee.employee_code == text)
+            .filter(
+                Employee.employee_code == text
+            )
             .first()
         )
-
-        print("EMPLOYEE:", employee)
 
         if not employee:
 
