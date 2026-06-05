@@ -40,3 +40,8 @@ class Reminder(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+    last_sent_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
