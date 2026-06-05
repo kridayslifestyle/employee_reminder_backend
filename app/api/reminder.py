@@ -1,3 +1,6 @@
+from datetime import datetime
+from datetime import timedelta
+
 from fastapi import APIRouter
 from fastapi import Depends
 
@@ -7,6 +10,7 @@ from app.database.database import get_db
 
 from app.models.task import Task
 from app.models.employee import Employee
+from app.models.reminder import Reminder
 
 from app.services.telegram_service import send_message
 
@@ -48,6 +52,26 @@ def run_reminders(
         if not employee.telegram_chat_id:
             continue
 
+        existing_reminder = (
+            db.query(Reminder)
+            .filter(
+                Reminder.task_id == task.id
+            )
+            .order_by(
+                Reminder.last_sent_at.desc()
+            )
+            .first()
+        )
+
+        if existing_reminder:
+
+            thirty_minutes_ago = (
+                datetime.utcnow() - timedelta(minutes=30)
+            )
+
+            if existing_reminder.last_sent_at > thirty_minutes_ago:
+                continue
+
         message = f"""
 ⏰ TASK REMINDER
 
@@ -68,9 +92,38 @@ Please update your task status.
             message
         )
 
+        if existing_reminder:
+
+            existing_reminder.reminder_count += 1
+            existing_reminder.last_sent_at = datetime.utcnow()
+
+        else:
+
+            reminder = Reminder(
+                task_id=task.id,
+                employee_id=employee.id,
+                reminder_count=1
+            )
+
+            db.add(reminder)
+
+        db.commit()
+
         reminders_sent += 1
 
     return {
         "success": True,
         "reminders_sent": reminders_sent
+    }
+
+
+@router.get("/stats")
+def reminder_stats(
+    db: Session = Depends(get_db)
+):
+
+    total_reminders = db.query(Reminder).count()
+
+    return {
+        "total_reminders_sent": total_reminders
     }
