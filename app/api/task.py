@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 
 from app.models.task import Task
+from app.models.task_update import TaskUpdate
 from app.models.employee import Employee
 
 from app.schemas.task import (
@@ -195,6 +196,10 @@ def delete_task(
             status_code=404,
             detail="Task not found"
         )
+
+    db.query(TaskUpdate).filter(
+        TaskUpdate.task_id == task_id
+    ).delete()
 
     db.delete(task)
 
