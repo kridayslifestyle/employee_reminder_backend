@@ -18,6 +18,9 @@ from app.dependencies.auth import (
     get_current_user
 )
 
+from app.models.employee import Employee
+from app.services.telegram_service import send_message
+
 router = APIRouter(
     prefix="/tasks",
     tags=["Tasks"]
@@ -55,9 +58,33 @@ def create_task(
         due_time=payload.due_time
     )
 
+    
+
     db.add(task)
     db.commit()
     db.refresh(task)
+
+    if employee.telegram_chat_id:
+
+         message = f"""
+         📌 NEW TASK ASSIGNED
+
+        Title:
+        {task.title}
+
+        Description:
+        {task.description}
+
+        Due:
+        {task.due_time}
+
+        Status:
+        Not Started
+        """
+         send_message(
+            employee.telegram_chat_id,
+            message
+        )
 
     return task
 
@@ -69,5 +96,3 @@ def get_tasks(
     db: Session = Depends(get_db)
 ):
     return db.query(Task).all()
-
-
