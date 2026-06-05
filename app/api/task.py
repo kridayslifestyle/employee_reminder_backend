@@ -203,6 +203,8 @@ def delete_task(
         synchronize_session=False
     )
 
+    db.commit()
+
     db.delete(task)
 
     db.commit()
