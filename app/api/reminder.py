@@ -87,10 +87,33 @@ def run_reminders(
 
 Please update your task status.
 """
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "🟡 In Progress",
+                        "callback_data": f"in_progress:{task.id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "✅ Completed",
+                        "callback_data": f"completed:{task.id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "🆘 Need Help",
+                        "callback_data": f"need_help:{task.id}"
+                    }
+                ]
+            ]
+        }
 
         send_message(
             employee.telegram_chat_id,
-            message
+            message,
+            keyboard
         )
 
         if existing_reminder:
