@@ -82,10 +82,47 @@ async def telegram_webhook(
         db.add(update)
         db.commit()
 
-        send_message(
-            chat_id,
-            f"✅ Task status updated to: {status}"
+        if status == "completed":
+            send_message(
+                chat_id,
+                f"""
+        🎉 Great job!
+
+        Your task has been marked as completed.
+
+        📝 Task:
+        {task.title}
+
+        Keep up the good work! 🚀
+        """
         )
+        elif status == "in_progress":
+            send_message(
+            chat_id,
+            f"""
+        🟡 Got it!
+
+        You are now working on:
+
+        📝 {task.title}
+
+        Good luck! 👍
+        """
+        )
+        elif status == "need_help":
+            send_message(
+                chat_id,
+                f"""
+        🆘 Help request received.
+
+        Your manager has been notified regarding:
+
+        📝 {task.title}
+
+        Someone will contact you shortly.
+        """
+        )
+            
 
         return {"ok": True}
 
